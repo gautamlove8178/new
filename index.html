@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Meri Jaan 💖 — Romantic Shayari + Video</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family: 'Segoe UI', system-ui, Roboto, sans-serif;
+      background: radial-gradient(ellipse at center, #1b0a1f 0%, #050007 70%);
+      color:#fff;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .stage{
+      width:min(1000px,98%);
+      height:min(700px,95%);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border-radius:18px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 60px rgba(255,50,130,0.04) inset;
+      position:relative;
+      padding:36px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+    }
+    h1{font-size:28px;margin-bottom:8px;text-align:center}
+    .sub{opacity:0.8;font-size:14px;margin-bottom:20px}
+    .shayari{width:100%;height:380px;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px}
+    .line{
+      font-size:30px;line-height:1.3;max-width:900px;
+      transition:transform .5s ease, opacity .4s ease;
+      opacity:0;transform:translateY(30px) scale(.98);
+      text-shadow: 0 2px 30px rgba(255,100,160,0.12);
+    }
+    .line.show{opacity:1;transform:none}
+    .controls{display:flex;gap:12px;margin-top:20px}
+    .btn{
+      background:linear-gradient(90deg,#ff6aa8,#ff3f8a);
+      border:none;padding:12px 18px;border-radius:12px;color:white;
+      font-weight:700;cursor:pointer;font-size:16px;
+      box-shadow:0 6px 18px rgba(255,60,120,0.18);
+    }
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.08)}
+    .video-wrap{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.45),rgba(0,0,0,0.6));
+      display:flex;align-items:center;justify-content:center;flex-direction:column;
+      padding:24px;opacity:0;pointer-events:none;transition:opacity .6s ease}
+    .video-wrap.visible{opacity:1;pointer-events:auto}
+    video{max-width:100%;max-height:100%;border-radius:12px;box-shadow:0 10px 60px rgba(0,0,0,0.7)}
+    .video-hint{margin-top:12px;font-size:14px;opacity:0.85}
+
+    @keyframes floatUp {
+      0%{transform:translateY(0) scale(.8);opacity:0}
+      10%{opacity:1}
+      100%{transform:translateY(-900px) rotate(10deg) scale(1.2);opacity:0}
+    }
+
+    .floatingEmoji{
+      position:absolute;
+      bottom:-50px;
+      user-select:none;
+      pointer-events:none;
+      text-shadow:0 0 8px rgba(255,255,255,0.6),0 0 15px rgba(255,100,160,0.6);
+    }
+    @media(max-width:600px){.line{font-size:20px}.shayari{height:320px}}
+  </style>
+</head>
+<body>
+  <!-- Background Song -->
+  <audio id="bgSong" src="bestie.mp3" autoplay loop></audio>
+
+  <div class="stage" id="stage">
+    <div style="text-align:center">
+      <h1>Teri Muskurahat Meri Duniya — Meri Jaan 💖</h1>
+      <div class="sub">Neeche aane wali har line pe click karo — jab shayari khatam ho jayegi, video khud chal padega.</div>
+    </div>
+    <div class="shayari"><div id="line" class="line"></div></div>
+    <div class="controls">
+      <button id="nextBtn" class="btn">Next meri jaan 💖</button>
+      <button id="skipBtn" class="btn secondary">Skip to video</button>
+    </div>
+    <div id="videoWrap" class="video-wrap">
+      <video id="theVideo" controls playsinline controlslist="nodownload noremoteplayback" disablepictureinpicture>
+        <source src="meri jaan.mp4" type="video/mp4">
+      </video>
+      <div class="video-hint">Agar video autoplay na kare to play button dabayein.</div>
+    </div>
+  </div>
+
+  <script>
+    const lines=[
+      "mat pucho ki itni raat ko main kya kar rha hu....😘🥰",
+      "hai ek shaks jisse main shiddat se yaad kar rha hu ...🫶💖",
+      "ab dusri shayri",
+      "dil se dil kabhi juda nahi hote...💞",
+      "yun hum kisi pe fidaa nahi hote...😍💯💯",
+      "pyaar se bada rishta hai dosti ka...🤗❤️",
+      "kyuki dosti kabhi bewafa nahi hoti...💖🌹",
+      "ab teesri shayri",
+      "na ishq karo jhutha",
+      "na pyaar karo farzi...💔",
+      "aage nahi bataunga",
+      "meri shayari meri marzi...🤣🤣😂😂",     
+      "ab video dekh lo meri jaan...💖🥰😘"
+    ];
+    const lineEl=document.getElementById('line');
+    const nextBtn=document.getElementById('nextBtn');
+    const skipBtn=document.getElementById('skipBtn');
+    const videoWrap=document.getElementById('videoWrap');
+    const theVideo=document.getElementById('theVideo');
+    const bgSong=document.getElementById('bgSong');
+    let idx=0;
+
+    function showLine(i){
+      lineEl.classList.remove('show');
+      setTimeout(()=>{lineEl.textContent=lines[i]||'';lineEl.classList.add('show');},120);
+    }
+    nextBtn.addEventListener('click',()=>{
+      if(idx<lines.length){
+        showLine(idx);idx++;
+        if(idx===lines.length){nextBtn.textContent='Dekho video chal raha hai ▶';}
+      } else {revealVideo();}
+    });
+    skipBtn.addEventListener('click',()=>{revealVideo();});
+
+    function revealVideo(){
+      document.querySelector('.shayari').style.opacity=0;
+      document.querySelector('.controls').style.opacity=0;
+
+      // Stop song when video starts
+      bgSong.pause();
+      bgSong.currentTime=0;
+
+      setTimeout(()=>{
+        videoWrap.classList.add('visible');
+        const playPromise=theVideo.play();
+        if(playPromise!==undefined){playPromise.catch(e=>console.warn('Autoplay failed:',e));}
+      },600);
+    }
+
+    // Resume song when video ends
+    theVideo.addEventListener('ended',()=>{
+      bgSong.play();
+    });
+
+    window.addEventListener('load',()=>{
+      setTimeout(()=>{showLine(0);idx=1;nextBtn.textContent='Next meri jaan 💖';},300);
+      spawnEmojis();
+    });
+
+    function spawnEmojis(){
+      const stage=document.getElementById('stage');
+      const emojis=['💖','💕','🌸','✨','🌹','😘','😍'];
+      setInterval(()=>{
+        const e=document.createElement('div');
+        e.className='floatingEmoji';
+        e.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+        e.style.left=(5+Math.random()*90)+'%';
+        e.style.fontSize=(20+Math.random()*36)+'px';
+        e.style.animation=`floatUp ${6000+Math.random()*6000}ms linear forwards`;
+        stage.appendChild(e);
+        setTimeout(()=>e.remove(),12000);
+      },700);
+    }
+
+    document.addEventListener('keydown',(ev)=>{
+      if(ev.key==='Enter'||ev.key===' '){nextBtn.click();}
+      if(ev.key==='s'){skipBtn.click();}
+    });
+  </script>
+</body>
+</html>
