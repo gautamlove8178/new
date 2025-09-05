@@ -73,8 +73,8 @@
   </style>
 </head>
 <body>
-  <!-- Background Song -->
-  <audio id="bgSong" src="bestie.mp3" autoplay loop></audio>
+  <!-- Background Song (file name: bestie.mp3) -->
+  <audio id="bgSong" src="bestie.mp3" loop></audio>
 
   <div class="stage" id="stage">
     <div style="text-align:center">
@@ -107,9 +107,10 @@
       "na ishq karo jhutha",
       "na pyaar karo farzi...💔",
       "aage nahi bataunga",
-      "meri shayari meri marzi...🤣🤣😂😂",     
+      "meri shayari meri marzi...🤣🤣😂😂",
       "ab video dekh lo meri jaan...💖🥰😘"
     ];
+
     const lineEl=document.getElementById('line');
     const nextBtn=document.getElementById('nextBtn');
     const skipBtn=document.getElementById('skipBtn');
@@ -117,42 +118,98 @@
     const theVideo=document.getElementById('theVideo');
     const bgSong=document.getElementById('bgSong');
     let idx=0;
+    let bgStarted=false;
 
     function showLine(i){
       lineEl.classList.remove('show');
       setTimeout(()=>{lineEl.textContent=lines[i]||'';lineEl.classList.add('show');},120);
     }
-    nextBtn.addEventListener('click',()=>{
-      if(idx<lines.length){
-        showLine(idx);idx++;
-        if(idx===lines.length){nextBtn.textContent='Dekho video chal raha hai ▶';}
-      } else {revealVideo();}
-    });
-    skipBtn.addEventListener('click',()=>{revealVideo();});
 
-    function revealVideo(){
+    // Try to autoplay; if blocked, wait for first user gesture
+    async function tryStartBg(){
+      if(bgStarted) return;
+      try{
+        await bgSong.play();
+        bgStarted = true;
+      }catch(e){
+        // autoplay blocked — start on first user gesture
+        const startOnGesture = ()=>{
+          bgSong.play().catch(()=>{});
+          bgStarted = true;
+          document.removeEventListener('click', startOnGesture);
+          document.removeEventListener('keydown', startOnGesture);
+          document.removeEventListener('touchstart', startOnGesture);
+        };
+        document.addEventListener('click', startOnGesture, {once:true});
+        document.addEventListener('keydown', startOnGesture, {once:true});
+        document.addEventListener('touchstart', startOnGesture, {once:true});
+      }
+    }
+
+    nextBtn.addEventListener('click',async ()=>{
+      await tryStartBg();
+      if(idx<lines.length){showLine(idx);idx++; if(idx===lines.length)nextBtn.textContent='Dekho video chal raha hai ▶';}
+      else revealVideo();
+    });
+
+    skipBtn.addEventListener('click',async ()=>{ await tryStartBg(); revealVideo(); });
+
+    function fadeOutAudio(duration=600){
+      return new Promise(resolve=>{
+        const startVol = bgSong.volume || 1;
+        const steps = Math.max(6, Math.floor(duration/50));
+        const stepAmount = startVol/steps;
+        let i=0;
+        const iv = setInterval(()=>{
+          i++;
+          bgSong.volume = Math.max(0, startVol - stepAmount*i);
+          if(i>=steps){ clearInterval(iv); bgSong.pause(); bgSong.volume = startVol; resolve(); }
+        }, 50);
+      });
+    }
+
+    function fadeInAudio(duration=800){
+      return new Promise(resolve=>{
+        const target = 1;
+        bgSong.volume = 0;
+        bgSong.play().catch(()=>{}).then(()=>{
+          const steps = Math.max(6, Math.floor(duration/50));
+          const stepAmount = target/steps;
+          let i=0;
+          const iv = setInterval(()=>{
+            i++; bgSong.volume = Math.min(target, stepAmount*i);
+            if(i>=steps){ clearInterval(iv); resolve(); }
+          },50);
+        }).catch(()=>{ resolve(); });
+      });
+    }
+
+    async function revealVideo(){
       document.querySelector('.shayari').style.opacity=0;
       document.querySelector('.controls').style.opacity=0;
 
-      // Stop song when video starts
-      bgSong.pause();
-      bgSong.currentTime=0;
+      // Fade out background song before video
+      if(bgStarted){ await fadeOutAudio(500); } else { /* ensure future gestures won't start bg */ }
 
       setTimeout(()=>{
         videoWrap.classList.add('visible');
         const playPromise=theVideo.play();
-        if(playPromise!==undefined){playPromise.catch(e=>console.warn('Autoplay failed:',e));}
+        if(playPromise!==undefined){ playPromise.catch(e=>console.warn('Autoplay failed:',e)); }
       },600);
     }
 
-    // Resume song when video ends
-    theVideo.addEventListener('ended',()=>{
-      bgSong.play();
+    // Pause bg when video plays (cover cases where user taps video directly)
+    theVideo.addEventListener('play', ()=>{
+      if(bgStarted && !bgSong.paused){ bgSong.pause(); }
     });
 
-    window.addEventListener('load',()=>{
-      setTimeout(()=>{showLine(0);idx=1;nextBtn.textContent='Next meri jaan 💖';},300);
+    // Resume bg after video ends (with fade in)
+    theVideo.addEventListener('ended', ()=>{ fadeInAudio(700); });
+
+    window.addEventListener('load', ()=>{
+      setTimeout(()=>{ showLine(0); idx=1; nextBtn.textContent='Next meri jaan 💖'; },300);
       spawnEmojis();
+      tryStartBg();
     });
 
     function spawnEmojis(){
@@ -170,10 +227,7 @@
       },700);
     }
 
-    document.addEventListener('keydown',(ev)=>{
-      if(ev.key==='Enter'||ev.key===' '){nextBtn.click();}
-      if(ev.key==='s'){skipBtn.click();}
-    });
+    document.addEventListener('keydown',(ev)=>{ if(ev.key==='Enter'||ev.key===' '){ nextBtn.click(); } if(ev.key==='s'){ skipBtn.click(); } });
   </script>
 </body>
 </html>
